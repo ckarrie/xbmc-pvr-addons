@@ -59,6 +59,13 @@ case "${host}" in
     BIN_EXT=".so"
     BINPREFIX="lib"
     ;;
+  i*86-*-linux-android)
+    TARGET_LDFLAGS="-avoid-version -no-undefined"
+    OS="android"
+    ARCHITECTURE="i486"
+    BIN_EXT=".so"
+    BINPREFIX="lib"
+    ;;
   arm*-*-linux*)
     OS="linux"
     ARCHITECTURE="arm"
@@ -104,8 +111,14 @@ case "${host}" in
     ARCH_DEFINES="-DTARGET_POSIX -DTARGET_DARWIN -D_LINUX"
     DYN_LIB_EXT="dylib"
     ;;
-  *-freebsd*)
+  amd64-*-freebsd*)
     OS="freebsd"
+    ARCHITECTURE="x86_64"
+    ARCH_DEFINES="-DTARGET_POSIX -DTARGET_FREEBSD -D_LINUX"
+    ;;
+  i386-*-freebsd*)
+    OS="freebsd"
+    ARCHITECTURE="i486"
     ARCH_DEFINES="-DTARGET_POSIX -DTARGET_FREEBSD -D_LINUX"
     ;;
 esac
@@ -117,7 +130,7 @@ if test "$have_gl" = "yes"; then
 fi
 echo "GL: $have_gl"
 
-AC_CHECK_LIB([GLESv2],[main],have_gles2=yes, have_gles2=no)
+AC_CHECK_LIB([GLESv2],[main],[AC_CHECK_HEADER([GLES2/gl2.h], have_gles2=yes, have_gles2=no, )], have_gles2=no)
 if test "$have_gles2" = "yes"; then
   AC_DEFINE([HAVE_GLES2],[1],["Define to 1 if we have gles2"])
   AM_CONDITIONAL(HAVE_GLES2, true)
@@ -258,6 +271,8 @@ AC_CONFIG_FILES([Makefile \
                  lib/cmyth/Makefile \
                  lib/cmyth/libcmyth/Makefile \
                  lib/cmyth/librefmem/Makefile \
+                 lib/tinyxml2/Makefile \
+                 lib/libdvblinkremote/Makefile \
                  addons/Makefile \
                  addons/pvr.demo/Makefile \
                  addons/pvr.dvbviewer/Makefile \
@@ -269,6 +284,8 @@ AC_CONFIG_FILES([Makefile \
                  addons/pvr.vuplus/Makefile \
                  addons/pvr.vdr.vnsi/Makefile \
                  addons/pvr.mythtv.cmyth/Makefile \
+                 addons/pvr.dvblink/Makefile \
+                 addons/pvr.wmc/Makefile \
                  addons/pvr.iptvsimple/Makefile \
                  addons/pvr.argustv/addon/addon.xml
                  addons/pvr.demo/addon/addon.xml
@@ -280,6 +297,8 @@ AC_CONFIG_FILES([Makefile \
                  addons/pvr.njoy/addon/addon.xml
                  addons/pvr.vdr.vnsi/addon/addon.xml
                  addons/pvr.vuplus/addon/addon.xml
+                 addons/pvr.dvblink/addon/addon.xml
+                 addons/pvr.wmc/addon/addon.xml
                  addons/pvr.iptvsimple/addon/addon.xml])
 
 AC_OUTPUT

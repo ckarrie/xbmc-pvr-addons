@@ -43,6 +43,8 @@ class MythEventObserver
 public:
   // Request to stop Live TV
   virtual void CloseLiveStream() = 0;
+  virtual void UpdateSchedules() = 0;
+  virtual void UpdateRecordings() = 0;
 };
 
 class MythEventHandler
@@ -52,7 +54,7 @@ public:
   void RegisterObserver(MythEventObserver *observer);
 
   void Suspend();
-  void Resume();
+  void Resume(bool sendWOL = false);
 
   void PreventLiveChainUpdate();
   void AllowLiveChainUpdate();
@@ -82,7 +84,7 @@ public:
       : m_type(type)
       , m_channelID(chanid)
     {
-      m_recordingStartTimeSlot = MythTimestamp(recstartts, false);
+      m_recordingStartTimeSlot = MythTimestamp(recstartts);
     }
 
     RecordingChangeEvent(RecordingChangeType type, const MythProgramInfo &prog)

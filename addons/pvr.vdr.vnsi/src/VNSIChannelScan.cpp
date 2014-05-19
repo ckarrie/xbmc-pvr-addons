@@ -58,6 +58,25 @@
 using namespace ADDON;
 
 cVNSIChannelScan::cVNSIChannelScan()
+ : m_running(false),
+   m_stopped(false),
+   m_Canceled(false),
+   m_window(NULL),
+   m_spinSourceType(NULL),
+   m_spinCountries(NULL),
+   m_spinSatellites(NULL),
+   m_spinDVBCInversion(NULL),
+   m_spinDVBCSymbolrates(NULL),
+   m_spinDVBCqam(NULL),
+   m_spinDVBTInversion(NULL),
+   m_spinATSCType(NULL),
+   m_radioButtonTV(NULL),
+   m_radioButtonRadio(NULL),
+   m_radioButtonFTA(NULL),
+   m_radioButtonScrambled(NULL),
+   m_radioButtonHD(NULL),
+   m_progressDone(NULL),
+   m_progressSignal(NULL)
 {
 }
 
@@ -507,7 +526,7 @@ bool cVNSIChannelScan::OnResponsePacket(cResponsePacket* resp)
   if (requestID == VNSI_SCANNER_PERCENTAGE)
   {
     uint32_t percent = resp->extract_U32();
-    if (percent >= 0 && percent <= 100)
+    if (percent <= 100)
       SetProgress(percent);
   }
   else if (requestID == VNSI_SCANNER_SIGNAL)

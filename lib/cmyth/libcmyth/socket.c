@@ -651,7 +651,7 @@ cmyth_rcv_okay(cmyth_conn_t conn)
 			  "%s: did not consume everything\n",
 			  __FUNCTION__);
 		while(count > 0 && err == 0) {
-			consumed = cmyth_rcv_data(conn, &err, tmp, sizeof(tmp) - 1, count);
+			consumed = cmyth_rcv_data(conn, &err, (unsigned char*)tmp, sizeof(tmp) - 1, count);
 			cmyth_dbg(CMYTH_DBG_DEBUG, "%s: leftover data: count %i, read %i, errno %i\n", __FUNCTION__, count, consumed, err);
 			count -= consumed;
 		}
@@ -1869,7 +1869,7 @@ cmyth_rcv_proginfo(cmyth_conn_t conn, int *err, cmyth_proginfo_t buf,
 	/*
 	 * Get proginfo_rec_priority (byte)
 	 */
-	consumed = cmyth_rcv_int8(conn, err,
+	consumed = cmyth_rcv_int32(conn, err,
 				    &buf->proginfo_rec_priority, count);
 	count -= consumed;
 	total += consumed;
@@ -2211,7 +2211,7 @@ cmyth_rcv_proginfo(cmyth_conn_t conn, int *err, cmyth_proginfo_t buf,
 		/*
 		 * Get proginfo_recpriority_2 (byte)
 		 */
-		consumed = cmyth_rcv_int8(conn, err,
+		consumed = cmyth_rcv_int32(conn, err,
 					    &buf->proginfo_recpriority_2,
 					    count);
 		count -= consumed;
@@ -2727,15 +2727,121 @@ cmyth_rcv_keyframe(cmyth_conn_t conn, int *err, cmyth_keyframe_t buf,
 		   int count)
 {
 	int tmp_err;
+	int consumed;
+	int total = 0;
+	char *failed = NULL;
 
 	if (!err) {
 		err = &tmp_err;
 	}
+	if (count <= 0) {
+		*err = EINVAL;
+		return 0;
+	}
+	if(!buf) {
+		*err = EINVAL;
+		cmyth_dbg(CMYTH_DBG_ERROR, "%s: NULL buffer\n", __FUNCTION__);
+		return 0;
+	}
+
+	*err = 0;
+
 	/*
-	 * For now this is unimplemented.
+	 * Get frame number (uint32)
 	 */
-	*err = ENOSYS;
-	return 0;
+	consumed = cmyth_rcv_uint32(conn, err, &(buf->keyframe_number), count);
+	count -= consumed;
+	total += consumed;
+	if (*err) {
+		failed = "cmyth_rcv_uint32";
+		goto fail;
+	}
+
+	/*
+	 * Get position (int64)
+	 */
+	consumed = cmyth_rcv_int64(conn, err, &(buf->keyframe_pos) , count);
+	count -= consumed;
+	total += consumed;
+	if (*err) {
+		failed = "cmyth_rcv_int64";
+		goto fail;
+	}
+
+	return total;
+
+fail:
+	cmyth_dbg(CMYTH_DBG_ERROR, "%s: %s() failed (%d) (count = %d)\n",
+		  __FUNCTION__, failed, *err, count);
+	return total;
+}
+
+int
+cmyth_rcv_posmap(cmyth_conn_t conn, int *err, cmyth_posmap_t buf,
+		   int count)
+{
+	int tmp_err;
+	int consumed = 0;
+	int r;
+	int c;
+	cmyth_keyframe_t kf;
+	int i;
+	void *ptr;
+
+	cmyth_dbg(CMYTH_DBG_DEBUG, "%s\n", __FUNCTION__);
+	if (!err) {
+		err = &tmp_err;
+	}
+	if (count <= 0) {
+		*err = EINVAL;
+		return 0;
+	}
+	if(!buf) {
+		*err = EINVAL;
+		cmyth_dbg(CMYTH_DBG_ERROR, "%s: NULL buffer\n", __FUNCTION__);
+		return 0;
+	}
+
+	*err = 0;
+	c = i = 0;
+
+	while (count > 0) {
+		kf = cmyth_keyframe_create();
+		if (!kf) {
+			cmyth_dbg(CMYTH_DBG_ERROR,
+				  "%s: cmyth_keyframe_create() failed\n",
+				  __FUNCTION__);
+			*err = ENOMEM;
+			break;
+		}
+		r = cmyth_rcv_keyframe(conn, err, kf, count);
+		consumed += r;
+		count -= r;
+		if (*err) {
+			ref_release(kf);
+			cmyth_dbg(CMYTH_DBG_ERROR,
+				  "%s: cmyth_rcv_keyframe() failed (%d)\n",
+				  __FUNCTION__, *err);
+			break;
+		}
+
+		if (c <= i) {
+			c += 100;
+			ptr = realloc(buf->posmap_list, c * sizeof(cmyth_keyframe_t));
+			if (!ptr) {
+				ref_release(kf);
+				*err = ENOMEM;
+				cmyth_dbg(CMYTH_DBG_ERROR,
+					  "%s: %s: realloc() failed for list\n",
+					  __FUNCTION__, *err);
+				break;
+			}
+			buf->posmap_list = ptr;
+		}
+		buf->posmap_list[i++] = kf;
+		buf->posmap_count = i;
+	}
+	return consumed;
 }
 
 /*
@@ -2983,16 +3089,17 @@ cmyth_rcv_data(cmyth_conn_t conn, int *err, unsigned char *buf, int buflen, int 
 		++conn->conn_pos;
 		++consumed;
 	}
-	cmyth_dbg(CMYTH_DBG_PROTO, "%s: string received '%s'\n",
+	buf[placed] = '\0';
+	cmyth_dbg(CMYTH_DBG_PROTO, "%s: data received '%s'\n",
 		  __FUNCTION__, buf);
 	return consumed;
 }
 
 void cmyth_toupper_string(char *str)
 {
+	size_t i;
 	if (str) {
-		int i;
-		for ( i=0 ; i < sizeof(str) && str[i] != '\0' ; i++ ) {
+		for (i=0 ; i < sizeof(str) && str[i] != '\0' ; i++) {
 			str[i] = toupper(str[i]);
 		}
 	}

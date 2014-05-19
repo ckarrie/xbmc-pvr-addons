@@ -27,6 +27,7 @@
 #include <libXBMC_addon.h>
 #include <libXBMC_pvr.h>
 #include <libXBMC_gui.h>
+#include <libXBMC_codec.h>
 
 extern "C" {
 #include <cmyth/cmyth.h>
@@ -34,6 +35,18 @@ extern "C" {
 
 #ifdef __WINDOWS__
 #define strdup _strdup // # strdup is POSIX, _strdup should be used instead
+
+static inline struct tm *localtime_r(const time_t * clock, struct tm *result)
+{
+	struct tm *data;
+	if (!clock || !result)
+		return NULL;
+	data = localtime(clock);
+	if (!data)
+		return NULL;
+	memcpy(result, data, sizeof(*result));
+	return result;
+}
 #endif
 
 #define TCP_RCV_BUF_CONTROL_SIZE           128000 // Inherited from MythTV's MythSocket class
@@ -61,6 +74,15 @@ extern "C" {
 #define SUBTITLE_SEPARATOR " - "
 
 #define MENUHOOK_REC_DELETE_AND_RERECORD   1
+#define MENUHOOK_KEEP_LIVETV_RECORDING     2
+#define MENUHOOK_SHOW_HIDE_NOT_RECORDING   3
+#define MENUHOOK_EPG_REC_CHAN_ALL_SHOWINGS 4
+#define MENUHOOK_EPG_REC_CHAN_WEEKLY       5
+#define MENUHOOK_EPG_REC_CHAN_DAILY        6
+#define MENUHOOK_EPG_REC_ONE_SHOWING       7
+#define MENUHOOK_EPG_REC_NEW_EPISODES      8
+
+#define DEFAULT_HANDLE_DEMUXING            false
 
 /*!
  * @brief PVR macros for string exchange
@@ -79,6 +101,7 @@ extern CStdString   g_szClientPath;            ///< The Path where this driver i
 
 /* Client Settings */
 extern CStdString   g_szMythHostname;          ///< The Host name or IP of the mythtv server
+extern CStdString   g_szMythHostEther;         ///< The Host MAC address of the mythtv server
 extern int          g_iMythPort;               ///< The mythtv Port (default is 6543)
 extern CStdString   g_szDBUser;                ///< The mythtv sql username (default is mythtv)
 extern CStdString   g_szDBPassword;            ///< The mythtv sql password (default is mythtv)
@@ -100,9 +123,11 @@ extern bool         g_bRecAutoRunJob3;
 extern bool         g_bRecAutoRunJob4;
 extern bool         g_bRecAutoExpire;
 extern int          g_iRecTranscoder;
+extern bool         g_bDemuxing;
 
 extern ADDON::CHelper_libXBMC_addon *XBMC;
 extern CHelper_libXBMC_pvr   *PVR;
 extern CHelper_libXBMC_gui   *GUI;
+extern CHelper_libXBMC_codec *CODEC;
 
 #endif /* CLIENT_H */

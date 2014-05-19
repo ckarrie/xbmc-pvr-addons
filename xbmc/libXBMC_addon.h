@@ -1,7 +1,7 @@
 #pragma once
 /*
  *      Copyright (C) 2005-2013 Team XBMC
- *      http://www.xbmc.org
+ *      http://xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,6 +41,16 @@
 #define ADDON_HELPER_ARCH       "x86-osx"
 #else
 #define ADDON_HELPER_ARCH       "x86-osx"
+#endif
+#elif defined(__FreeBSD__)	// freebsd
+#if defined(__x86_64__)
+#define ADDON_HELPER_ARCH	"x86_64-freebsd"
+#elif defined(_POWERPC)
+#define ADDON_HELPER_ARCH	"powerpc-freebsd"
+#elif defined(_POWERPC64)
+#define ADDON_HELPER_ARCH	"powerpc64-freebsd"
+#else
+#define ADDON_HELPER_ARCH	"i386-freebsd"
 #endif
 #else                           // linux
 #if defined(__x86_64__)

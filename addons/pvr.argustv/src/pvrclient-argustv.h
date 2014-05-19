@@ -29,6 +29,7 @@
 #include "guideprogram.h"
 
 #include "KeepAliveThread.h"
+#include "EventsThread.h"
 
 class CTsReader;
 
@@ -110,7 +111,6 @@ private:
   cChannel* FetchChannel(std::vector<cChannel*> m_Channels, int channelid, bool LogError = true);
   void FreeChannels(std::vector<cChannel*> m_Channels);
   void Close();
-  bool FetchRecordingDetails(std::string recordingid, cRecording& recording);
   bool _OpenLiveStream(const PVR_CHANNEL &channel);
 
   int                     m_iCurrentChannel;
@@ -128,7 +128,8 @@ private:
   int                     m_epg_id_offset;
   int                     m_signalqualityInterval;
   CTsReader*              m_tsreader;
-  CKeepAliveThread        m_keepalive;
+  CKeepAliveThread*       m_keepalive;
+  CEventsThread*          m_eventmonitor;
 #if defined(ATV_DUMPTS)
   char ofn[25];
   int ofd;
